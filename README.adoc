@@ -1,0 +1,77 @@
+== Ansible script to setup the the latest Kodi/XBMC on a Raspberry Pi 2 from OSX
+.This tutorial/ansible script provisions a Raspberry Pi with the latest Kodi/XBMC and pvr.iptvsimple.
+
+For the provisioning script to work you need Ansible.  See DEPENDENCIES.adoc.
+The whole procedure of setting up the Raspberry Pi SD card plus provisioning
+the Raspberry Pi takes about 3 hours with a reasonably fast SD card. 
+The procedure may fail with an 8 GB SD card.  A 16 GB SD Card is recommended.
+
+.The procedure has only been tested with:
+* A Raspberry Pi 2
+* Ansible 1.9.4 running on OSX El Capitan
+* Raspbian Jessie (2015-11-21-raspbian-jessie.img to be exact)
+
+The procedure was last tested on December 12, 2015 successfully.
+
+=== License
+The MIT License (MIT).  See LICENSE.adoc
+
+=== Procedure 
+
+* Get the Raspbian image from https://www.raspberrypi.org/downloads/raspbian/
+
+==== Prepare Raspberry Pi (using the command line)
+
+* Format SD card as FAT32
+----
+    $ diskutil list
+    $ sudo diskutil eraseDisk FAT32 NAME MBRFormat /dev/disk<disk# from diskutil>
+----
+  - Unmount SD card
+----
+   $ diskutil unmountDisk /dev/disk<disk# from diskutil>
+----
+  - Copy the data to your SD card
+----
+   $ sudo dd bs=1m if=image.img of=/dev/disk<disk# from diskutil>
+----
+  - After the `dd` command finishes, eject the card
+----
+   $ sudo diskutil eject /dev/disk<disk# from diskutil>
+----
+
+* If you want Wifi to work add the follwing to your secrets.yml
+----
+wifi_ssid: yourSSID
+wifi_password: yourWIFIPassword
+----
+
+* If you purchased an MPG2 license add the following to your secrets.yml.  If you did not purchase an MPG2 license do not add a decode_MPG2 line to secrets.yml.
+----
+decode_MPG2: decode_MPG2=<yourLicense>
+----
+
+* If you purchased an WVC1 license add the following to your secrets.yml. If you did not purchase an WVC1 license do not add a decode_WVC1 line to secrets.yml.
+----
+decode_WVC1: decode_WVC1=<yourLicense>
+----
+
+* Find the Raspberry Pi's ip address (I used nmap to do this step.  You can install nmap with macports.  See DEPENDENCIES.adoc). Note that you will need to edit the network below depending on your particular settings.
+----
+ $ sudo nmap -sP 192.168.2.0/24
+----
+
+* Edit the hosts file with the correct ip address for your Raspberry Pi and the run (this step takes about 3 hours)
+----
+ $ ansible-playbook -i hosts kodi.yml
+----
+
+.When the Ansible script is done you should be able to ssh into the pi with password `raspberry` using the following command:
+----
+ $ ssh pi@kodi.local
+----
+
+.Once Logged in you can run Kodi by typing
+----
+$ kodi
+----

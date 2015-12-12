@@ -1,0 +1,278 @@
+- name: Install dependencies 
+  apt: name={{ item }} update_cache=yes
+  with_items:
+    - automake 
+    - autopoint 
+    - bison 
+    - build-essential 
+    - ccache 
+    - cmake 
+    - curl 
+    - cvs 
+    - default-jre 
+    - fp-compiler 
+    - gawk 
+    - gdc 
+    - gettext 
+    - git-core 
+    - gperf 
+    - libasound2-dev 
+    - libass-dev 
+    - libavcodec-dev 
+    - libavfilter-dev 
+    - libavformat-dev 
+    - libavutil-dev 
+    - libbluetooth-dev 
+    - libbluray-dev 
+    - libbluray1 
+    - libboost-dev 
+    - libboost-thread-dev 
+    - libbz2-dev 
+    - libcap-dev
+    - libcdio-dev
+    - libcurl3
+    - libcurl4-gnutls-dev
+    - libcwiid-dev
+    - libcwiid1
+    - libdbus-1-dev
+    - libenca-dev
+    - libflac-dev
+    - libfontconfig-dev
+    - libfreetype6-dev
+    - libfribidi-dev
+    - libglew-dev
+    - libiso9660-dev
+    - libjasper-dev
+    - libjpeg-dev
+    - libltdl-dev
+    - liblzo2-dev
+    - libmad0-dev
+    - libmicrohttpd-dev
+    - libmodplug-dev
+    - libmp3lame-dev
+    - libmpeg2-4-dev
+    - libmpeg3-dev
+    - libmysqlclient-dev
+    - libnfs-dev
+    - libogg-dev
+    - libpcre3-dev
+    - libplist-dev
+    - libpng-dev
+    - libpostproc-dev
+    - libpulse-dev
+    - libsamplerate-dev
+    - libsdl-dev
+    - libsdl-gfx1.2-dev
+    - libsdl-image1.2-dev
+    - libsdl-mixer1.2-dev
+    - libshairport-dev
+    - libsmbclient-dev
+    - libsqlite3-dev
+    - libssh-dev
+    - libssl-dev
+    - libswscale-dev
+    - libtiff-dev
+    - libtinyxml-dev
+    - libtool
+    - libudev-dev
+    - libusb-dev
+    - libva-dev
+    - libva-egl1
+    - libva-tpi1
+    - libvdpau-dev
+    - libvorbisenc2
+    - libxml2-dev
+    - libxmu-dev
+    - libxrandr-dev
+    - libxrender-dev
+    - libxslt1-dev
+    - libxt-dev
+    - libyajl-dev
+    - mesa-utils
+    - nasm
+    - pmount
+    - python-dev
+    - python-imaging
+    - python-sqlite
+    - swig
+    - unzip
+    - yasm
+    - zip
+    - zlib1g-dev
+- name: clean apt-cache
+  command: apt-get clean
+- name: create /home/pi/tmp/kodi directory
+  file: > 
+    path=/home/pi/tmp/kodi 
+    state=directory 
+    mode=0755 
+    recurse=yes 
+    owner=pi 
+    group=pi
+- name: clone DTS Coherent Acoustics decoder repo 
+  git: > 
+    repo=https://github.com/foo86/dcadec 
+    dest=/home/pi/tmp/kodi/dcadec
+    force=yes
+    accept_hostkey=yes
+- name: make DTS Coherent Acoustics decoder repo 
+  shell: make install 
+  args:
+    chdir: /home/pi/tmp/kodi/dcadec
+#- name: rm DTS Coherent Acoustics decoder repo
+#  command: rm -rf /home/pi/tmp/kodi/dcadec
+#  args:
+#    chdir: /home/pi/tmp/kodi/
+- name: Install more dependencies 
+  apt: name={{ item }} update_cache=yes
+  with_items:
+    - uuid-dev 
+    - libgnutls28-dev
+    - libegl1-mesa 
+    - libegl1-mesa-dbg 
+    - libegl1-mesa-dev 
+    - libegl1-mesa-drivers 
+    - libegl1-mesa-drivers-dbg  
+    - libgles1-mesa 
+    - libgles1-mesa-dbg 
+    - libgles1-mesa-dev 
+    - libgles2-mesa 
+    - libgles2-mesa-dbg 
+    - libgles2-mesa-dev
+- name: install taglib
+  apt: name={{ item }} update_cache=yes
+  with_items:
+    - libtag1-dev
+- name: clone Kodi repo
+  git: > 
+    repo=https://github.com/xbmc/xbmc 
+    dest=/home/pi/tmp/kodi/xbmc
+    force=yes
+    accept_hostkey=yes
+- name: bootstrap Kodi
+  shell: ./bootstrap
+  args:
+    chdir: /home/pi/tmp/kodi/xbmc/
+#    creates: /path/to/database
+- name: make crossguid
+  shell: make -C tools/depends/target/crossguid PREFIX=/usr/local
+  args:
+    chdir: /home/pi/tmp/kodi/xbmc
+#    creates: /path/to/database
+#- name: make taglib
+#  shell: make -C lib/taglib install
+#  args:
+#    chdir: /home/pi/tmp/kodi/xbmc
+#    creates: /path/to/database
+- name: configure Kodi
+  shell: CFLAGS="-I/opt/vc/include/ -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -mfloat-abi=hard -mcpu=cortex-a7 -mfpu=neon-vfpv4" CXXFLAGS="-I/opt/vc/include/ -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -mfloat-abi=hard -mcpu=cortex-a7 -mfpu=neon-vfpv4" LDFLAGS="-L/opt/vc/lib" FFMPEG_OPTS="--cpu=cortex-a7" ./configure --disable-gl --enable-gles --with-platform=raspberry-pi --disable-x11 --disable-vaapi --disable-vdpau --disable-avahi --disable-pulse --disable-optical-drive --enable-dvdcss=no --disable-vtbdecoder --enable-alsa --enable-player=omxplayer
+  args:
+    chdir: /home/pi/tmp/kodi/xbmc
+- name: make kodi
+  shell: make -j4
+  args:
+    chdir: /home/pi/tmp/kodi/xbmc
+    creates: /home/pi/tmp/kodi/xbmc/kodi.bin
+- name: install Kodi
+  shell: make install
+  args:
+    chdir: /home/pi/tmp/kodi/xbmc
+#    creates: /path/to/database
+- name: clone Pulse Eight platform 
+  git: > 
+    repo=https://github.com/Pulse-Eight/platform 
+    dest=/home/pi/tmp/kodi/platform
+    force=yes
+    accept_hostkey=yes
+- name: make build dir for Pulse eight Platfrom
+  file: > 
+    path=/home/pi/tmp/kodi/platform/build 
+    state=directory 
+    mode=0755 
+    owner=pi 
+    group=pi
+- name: cmake Pulse Eight platform
+  shell: cmake -DCMAKE_MODULE_PATH=/usr/local ..
+  args:
+    chdir: /home/pi/tmp/kodi/platform/build
+#    creates: /path/to/database
+- name: make & Install Pulse Eight platform
+  shell: make install
+  args:
+    chdir: /home/pi/tmp/kodi/platform/build
+#    creates: /path/to/database
+- name: create simbolic link to /usr/local/include/p8-platfrom
+  file: > 
+    src=/usr/local/include/p8-platform 
+    dest=/usr/local/include/platform 
+    owner=root 
+    group=staff 
+    state=link
+- name: create simbolic link to /usr/local/lib/p8-platform
+  file: > 
+    src=/usr/local/lib/p8-platform 
+    dest=/usr/local/lib/platform 
+    owner=root 
+    group=staff 
+    state=link
+- name: create simbolic link to /usr/local/lib/platform/p8-platform-config.cmake
+  file: > 
+    src=/usr/local/lib/p8-platform/p8-platform-config.cmake 
+    dest=/usr/local/lib/p8-platform/platform-config.cmake 
+    owner=root 
+    group=staff 
+    state=link
+- name: clone kodi-platform repo
+  git: > 
+    repo=https://github.com/xbmc/kodi-platform 
+    dest=/home/pi/tmp/kodi/kodi-platform
+    force=yes
+    accept_hostkey=yes
+- name: make build dir for kodi-platform
+  file: > 
+    path=/home/pi/tmp/kodi/kodi-platform/build 
+    state=directory 
+    mode=0755 
+    owner=pi 
+    group=pi
+- name: cmake for kodi-platform
+  shell: cmake -DCMAKE_MODULE_PATH=/usr/local ..
+  args:
+    chdir: /home/pi/tmp/kodi/kodi-platform/build
+#    creates: /path/to/database
+- name: make & Install Pulse Eight platform
+  shell: make install
+  args:
+    chdir: /home/pi/tmp/kodi/kodi-platform/build
+#    creates: /path/to/database
+- name: clone pvr.iptvsimple
+  git: > 
+    repo=https://github.com/kodi-pvr/pvr.iptvsimple 
+    dest=/home/pi/tmp/kodi/pvr.iptvsimple
+    force=yes
+    accept_hostkey=yes
+- name: make build dir for pvr.iptvsimple
+  file: > 
+    path=/home/pi/tmp/kodi/pvr.iptvsimple/build 
+    state=directory 
+    mode=0755 
+    owner=pi 
+    group=pi
+- name: cmake for pvr.iptvsimple
+  shell: cmake -DCMAKE_MODULE_PATH=/usr/local ..
+  args: 
+    chdir: /home/pi/tmp/kodi/pvr.iptvsimple/build
+#    creates: /path/to/database
+- name: edit /home/pi/tmp/kodi/pvr.iptvsimple/src/PVRIptvData.h
+  lineinfile: 
+    dest: /home/pi/tmp/kodi/pvr.iptvsimple/src/PVRIptvData.h
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: 'PLATFORM', line: 'class PVRIptvData : public P8PLATFORM::CThread' }
+- name: make & Install pvr.iptvsimple
+  shell: make install
+  args:
+    chdir: /home/pi/tmp/kodi/pvr.iptvsimple/build
+#    creates: /path/to/database
+

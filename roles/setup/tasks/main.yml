@@ -1,0 +1,66 @@
+- name: We are setting our new hostname.
+  hostname: name={{ hostname }}
+- name: Install the basics
+  apt: pkg={{ item }}
+  with_items:
+    - avahi-daemon
+    - netatalk
+    - tmux
+    - i2c-tools
+    - python-smbus
+    - vim   
+    - git 
+    - samba 
+    - samba-common-bin
+    - rpi-update
+- name: ensure avahi-daemon is running (and enable it at boot)
+  service: name=avahi-daemon state=started enabled=yes
+- name: ensure netatalk is running (and enable it at boot)
+  service: name=netatalk state=started enabled=yes
+- name: Configure wifi
+  lineinfile:
+    dest: /etc/wpa_supplicant/wpa_supplicant.conf 
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^network={', line: 'network={' }
+    - { regexp: '^ssid', line: 'ssid="{{wifi_ssid}}"' }
+    - { regexp: '^psk', line: 'psk="{{wifi_password}}"' }
+    - { regexp: '^}', line: '}' }
+  when: wifi_password != ''
+- name: Configure MPG2 license
+  lineinfile:
+    dest: /boot/config.txt
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^decode_MPG2', line: '{{decode_MPG2}}' }
+  when: decode_MPG2 != ''
+- name: Configure WVC1 license
+  lineinfile:
+    dest: /boot/config.txt
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^decode_WVC1', line: '{{decode_WVC1}}' }
+  when: decode_WVC1 != '' 
+- name: set to runlevel 3 by default
+  command: /bin/systemctl set-default -f multi-user.target
+- name: resize filesystem
+  script: expandRPIfs.sh
+- name: configure so that pi sets correct time at boot
+  lineinfile:
+    dest: /etc/rc.local
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^ntpd ', line: 'ntpd -gq' }
+- name: reboot raspberri pi
+  shell: sleep 5s && sudo /sbin/shutdown -r now
+  async: 1
+  poll: 0
+  ignore_errors: true
+- name: waiting for raspberry pi to come back
+  local_action: wait_for port=22 host="{{ ansible_ssh_host | default(inventory_hostname) }}" delay=10
+                state=started
+  sudo: false

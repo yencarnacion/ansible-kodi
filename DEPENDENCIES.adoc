@@ -1,0 +1,29 @@
+== Kodi Ansible Project Dependencies
+
+=== What you need to run on OSX
+.Download and install the following:
+* install ansible (see instructions below)
+* install sshpass
+* (optional) install nmap
+
+.Install Ansible (on OSX)
+----
+$ sudo easy_install pip
+$ sudo pip install ansible
+----
+
+Installing sshpass on OS X is not as simple as installing Ansible.
+Before you get started, you need to install Xcode and the Xcode command 
+line tools.
+See https://guide.macports.org/chunked/installing.html#installing.xcode
+After you get macports installed, do:
+----
+$ sudo port selfupdate
+$ sudo port install sshpass
+----
+
+(optional) If you installed macports you can also install nmap as follows:
+----
+$ sudo port selfupdate
+$ sudo port install nmap
+----
